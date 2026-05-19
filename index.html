@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>曲の並び替えツール (Music Sorter)</title>
+    <!-- Tailwind CSS for rich UI styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ドラッグ中の要素のスタイル定義 */
+        .sortable-ghost {
+            opacity: 0.4;
+            background-color: #e0f2fe !important;
+            border: 2px dashed #0284c7 !important;
+        }
+        .sortable-chosen {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+            transform: scale(1.02);
+            cursor: grabbing !important;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-tr from-slate-50 to-blue-50 min-h-screen text-slate-800 font-sans antialiased pb-12">
+
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        <!-- ヘッダー -->
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight flex items-center justify-center gap-3">
+                <i class="fa-solid fa-music text-blue-600"></i>
+                お気に入り曲 並び替えツール
+            </h1>
+            <p class="text-slate-500 mt-2 text-sm md:text-base">
+                曲をドラッグ＆ドロップして好きな順に並び替えましょう。各曲の再生ボタンを押すと、その場で動画を再生できます。
+            </p>
+        </header>
+
+        <!-- メイングリッド: 左側（操作・出力・プレイヤー）、右側（並び替えリスト） -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- 操作・出力・プレイヤーパネル (PC時は追従スクロール) -->
+            <div class="lg:col-span-5 space-y-6 lg:sticky lg:top-6 h-fit">
+                
+                <!-- YouTube 埋め込みプレイヤー -->
+                <div id="playerContainer" class="bg-white rounded-2xl shadow-md border border-slate-100 p-6">
+                    <h2 class="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <i class="fa-brands fa-youtube text-red-600"></i>
+                        YouTube プレイヤー
+                    </h2>
+                    
+                    <!-- 16:9比率のアスペクト比固定ビデオコンテナ -->
+                    <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-slate-950 flex items-center justify-center border border-slate-200">
+                        <!-- 初期状態プレースホルダー -->
+                        <div id="playerPlaceholder" class="text-center p-4">
+                            <i class="fa-brands fa-youtube text-5xl text-slate-600 mb-2 animate-pulse"></i>
+                            <p class="text-xs text-slate-400">曲の再生ボタン <i class="fa-solid fa-play"></i> をクリックすると<br>ここに動画が読み込まれます</p>
+                        </div>
+                        <!-- 実際の動画プレーヤー (エラー回避のためにreferrerpolicyやallow設定を強化) -->
+                        <iframe id="youtubeIframe" 
+                                class="absolute top-0 left-0 w-full h-full hidden" 
+                                frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                referrerpolicy="no-referrer-when-downgrade"
+                                allowfullscreen></iframe>
+                    </div>
+                    
+                    <!-- 現在再生中の曲名表示 ＆ 直リンクへの代替アクセス -->
+                    <div id="playingTitle" class="mt-3 text-sm font-semibold text-slate-700 bg-slate-50 rounded-lg py-2.5 px-3 flex flex-col gap-2 hidden border border-slate-100">
+                        <div class="flex items-center justify-center gap-2">
+                            <span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+                            <span class="truncate">再生中: <strong id="currentPlayingName" class="text-slate-900">なし</strong></span>
+                        </div>
+                        <!-- 埋め込み再生エラー（153など）が発生した時のための、YouTube直リンク -->
+                        <div class="border-t border-slate-200/60 pt-2 mt-1 text-center">
+                            <a id="directYoutubeLink" href="#" target="_blank" rel="noopener noreferrer" 
+                               class="inline-flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 hover:underline transition">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                動画が再生できない場合はYouTubeで直接開く
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 出力エリア -->
+                <div class="bg-white rounded-2xl shadow-md border border-slate-100 p-6">
+                    <h2 class="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-square-poll-horizontal text-emerald-500"></i>
+                        並び替え結果 (CSV)
+                    </h2>
+                    <p class="text-xs text-slate-400 mb-3">
+                        上から順番に並んだカンマ区切りのテキストです。自動で更新されます。
+                    </p>
+                    
+                    <textarea id="csvResult" readonly 
+                        class="w-full h-32 p-3 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-slate-700 resize-none"
+                        placeholder="並び替えるとここに結果が出力されます..."></textarea>
+                    
+                    <div class="mt-4">
+                        <!-- コピーボタン -->
+                        <button id="copyBtn" onclick="copyToClipboard()"
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-xl transition duration-200 flex items-center justify-center gap-2 shadow-sm active:scale-95">
+                            <i id="copyIcon" class="fa-solid fa-copy"></i>
+                            <span id="copyBtnText">結果をコピーする</span>
+                        </button>
+                    </div>
+
+                    <!-- アラート表示用メッセージ -->
+                    <div id="toast" class="hidden mt-3 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-lg flex items-center gap-2">
+                        <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                        クリップボードに結果をコピーしました！
+                    </div>
+                </div>
+
+                <!-- ヘルプ -->
+                <div class="bg-blue-50/50 rounded-2xl border border-blue-100 p-5 text-xs text-slate-600 space-y-2">
+                    <p class="font-bold text-blue-800 flex items-center gap-1">
+                        <i class="fa-solid fa-circle-info"></i> 操作のヒント & トラブルシューティング
+                    </p>
+                    <ul class="list-disc list-inside space-y-1.5 pl-1">
+                        <li>曲の行や左側の三本線アイコンをつまんで、上下に自由に入れ替えることができます。</li>
+                        <li>右側の再生ボタン <i class="fa-solid fa-play text-red-500 text-[10px]"></i> をクリックすると、左側のプレイヤーで動画をその場で再生します。</li>
+                        <li><strong>重要:</strong> ファイルを直接ダブルクリックして（<code>file://</code>）開いている場合、YouTubeの制限により動画は再生できません。GitHubにアップロードしてご覧ください。</li>
+                        <li>一部の動画は他サイトでの埋め込み再生を制限されています。その場合は「YouTubeで直接開く」リンクよりYouTubeサイトでお楽しみください。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 並び替えリスト -->
+            <div class="lg:col-span-7">
+                <div class="bg-white rounded-2xl shadow-md border border-slate-100 p-6">
+                    <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-list-ol text-blue-500"></i>
+                            曲リスト (<span id="songCount">0</span>曲)
+                        </h2>
+                        <span class="text-xs text-slate-400">ドラッグして移動</span>
+                    </div>
+
+                    <!-- SortableJS の適用先コンテナ -->
+                    <div id="songList" class="space-y-2 select-none">
+                        <!-- JavaScriptで曲がここに動的に生成されます -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- CDN for SortableJS (ドラッグ＆ドロップ機能) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+
+    <script>
+        // 曲情報（名前とYouTubeリンク）のデータモデル
+        const songDatabase = [
+            { name: "旅立ちの日に", url: "https://www.youtube.com/watch?v=LB50rwMsApo" },
+            { name: "Cosmos", url: "https://youtu.be/UyjMyNaJ8a8" },
+            { name: "believe", url: "https://www.youtube.com/watch?v=3brkjWLQYWo" },
+            { name: "翼をください", url: "https://youtu.be/jmEvIP377GA" },
+            { name: "糸", url: "https://youtu.be/otUrhyTLf-0" },
+            { name: "あすという日が", url: "https://youtu.be/iDzZQS3ysvY" },
+            { name: "いのちの歌", url: "https://youtu.be/8K7HmGQsqsc" },
+            { name: "花は咲く", url: "https://youtu.be/_1QGNHsO1sw" },
+            { name: "大切なもの", url: "https://youtu.be/5spSe9a_I7E" },
+            { name: "栄光の架橋", url: "https://youtu.be/1BxOBoRt2Ag" },
+            { name: "ハナミズキ", url: "https://youtu.be/IAMAaTtFCYg" },
+            { name: "虹", url: "https://www.youtube.com/watch?v=Xfu-4uaVX4A" },
+            { name: "あなたへ　旅立ちに寄せるメッセージ", url: "https://youtu.be/dEBy1XdLnlY" },
+            { name: "あなたに", url: "https://youtu.be/CEFDEhWydPQ" },
+            { name: "With you smile", url: "https://youtu.be/9NlMnGcOK68" },
+            { name: "道", url: "https://youtu.be/otBLh4Cw9m0" },
+            { name: "春に", url: "https://youtu.be/YvXToAIB0YQ" },
+            { name: "はばたこう明日へ", url: "https://youtu.be/WkCD91Nc284" },
+            { name: "そのままの君で", url: "https://youtu.be/soRbLHzfFZ4" },
+            { name: "ここにいる幸せ", url: "https://youtu.be/vBMHCkWjqak" },
+            { name: "アスナロウの木", url: "https://youtu.be/MTFg8QSbcmI" },
+            { name: "友　旅立ちの時", url: "https://youtu.be/T9hlk_5Asbo" },
+            { name: "名づけられた葉", url: "https://youtu.be/vSsuy0AqBCM" },
+            { name: "夏の日の贈り物", url: "https://youtu.be/MYN_F6GTYaE" },
+            { name: "Let's search for Tomorrow", url: "https://youtu.be/mSs4NOqNj-0" },
+            { name: "明日という大空", url: "https://youtu.be/OQMnF0cYqKo" },
+            { name: "ふるさと（嵐）", url: "https://youtu.be/sAmnF_0M0A8" },
+            { name: "Forever", url: "https://youtu.be/vUxW6fHzttc?list=RDvUxW6fHzttc" },
+            { name: "心の瞳", url: "https://youtu.be/HyyaG09i4lk" },
+            { name: "世界に一つだけの花", url: "https://www.youtube.com/watch?v=0xNpqk-fkz8&list=RD0xNpqk-fkz8&start_radio=1" },
+            { name: "夜明け", url: "https://www.youtube.com/watch?v=4oMqrUqW_WM" },
+            { name: "空より高く", url: "https://youtu.be/_0Vbre9OuCA" },
+            { name: "すみれの花のように", url: "https://youtu.be/aP4JgRCCe1E" },
+            { name: "キセキ", url: "https://www.youtube.com/watch?v=N-MlfBJLRUQ" }
+        ];
+
+        // 現在のアクティブな並び順
+        let currentSongs = [];
+        let sortableInstance = null;
+
+        // 初期化処理
+        window.addEventListener('DOMContentLoaded', () => {
+            // 起動時に初期リストを直接シャッフルしてスタート
+            shuffleInitialSongs();
+            renderList();
+            initSortable();
+            updateResult();
+        });
+
+        // 起動時の初期シャッフル関数
+        function shuffleInitialSongs() {
+            // 元の配列のクローンを作成
+            currentSongs = [...songDatabase];
+            // シャッフル
+            for (let i = currentSongs.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [currentSongs[i], currentSongs[j]] = [currentSongs[j], currentSongs[i]];
+            }
+        }
+
+        // YouTube URLから動画IDを抽出する関数
+        function getYouTubeId(url) {
+            let videoId = '';
+            if (url.includes('youtu.be/')) {
+                videoId = url.split('youtu.be/')[1].split('?')[0];
+            } else if (url.includes('youtube.com/watch')) {
+                const urlParams = new URLSearchParams(url.split('?')[1]);
+                videoId = urlParams.get('v');
+            }
+            return videoId;
+        }
+
+        // 埋め込みプレイヤーで動画を再生する関数
+        function playVideo(name, url) {
+            const videoId = getYouTubeId(url);
+            const iframe = document.getElementById('youtubeIframe');
+            const placeholder = document.getElementById('playerPlaceholder');
+            const playingTitle = document.getElementById('playingTitle');
+            const currentPlayingName = document.getElementById('currentPlayingName');
+            const directYoutubeLink = document.getElementById('directYoutubeLink');
+
+            if (videoId) {
+                // 自動再生、API制御用のパラメータ、関連動画非表示を追加
+                iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&rel=0`;
+                iframe.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+                playingTitle.classList.remove('hidden');
+                currentPlayingName.textContent = name;
+                
+                // 直リンクのURLを更新
+                directYoutubeLink.href = url;
+            }
+        }
+
+        // 曲リストを描画する関数
+        function renderList() {
+            const listContainer = document.getElementById('songList');
+            listContainer.innerHTML = '';
+            
+            document.getElementById('songCount').innerText = currentSongs.length;
+
+            currentSongs.forEach((song, index) => {
+                const item = document.createElement('div');
+                item.className = 'group bg-white hover:bg-slate-50 border border-slate-200 hover:border-blue-200 rounded-xl p-3 flex items-center justify-between gap-3 transition-colors duration-150 cursor-grab active:cursor-grabbing shadow-sm';
+                item.setAttribute('data-name', song.name);
+
+                // 各行の中身
+                item.innerHTML = `
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                        <!-- 順位インジケータ -->
+                        <div class="rank-badge w-7 h-7 flex items-center justify-center rounded-lg text-xs font-bold transition-all duration-300 flex-shrink-0">
+                            ${index + 1}
+                        </div>
+                        <!-- ハンドルアイコン -->
+                        <div class="text-slate-300 group-hover:text-slate-500 transition-colors pointer-events-none flex-shrink-0">
+                            <i class="fa-solid fa-bars"></i>
+                        </div>
+                        <!-- 曲名 -->
+                        <div class="font-medium text-slate-700 group-hover:text-slate-900 transition-colors truncate text-sm md:text-base pr-2">
+                            ${song.name}
+                        </div>
+                    </div>
+                    
+                    <!-- YouTube再生ボタン -->
+                    <button type="button" onclick="event.stopPropagation(); playVideo('${song.name}', '${song.url}')"
+                       class="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-red-50 hover:bg-red-100 border border-red-100 hover:border-red-200 rounded-full text-red-600 transition duration-200"
+                       title="${song.name} をその場で再生">
+                        <i class="fa-solid fa-play text-sm ml-0.5"></i>
+                    </button>
+                `;
+                listContainer.appendChild(item);
+            });
+            updateRankStyles();
+        }
+
+        // 順位に応じた色の変更
+        function updateRankStyles() {
+            const badges = document.querySelectorAll('.rank-badge');
+            badges.forEach((badge, index) => {
+                badge.className = 'rank-badge w-7 h-7 flex items-center justify-center rounded-lg text-xs font-bold transition-all duration-300 flex-shrink-0';
+                if (index === 0) {
+                    badge.classList.add('bg-amber-100', 'text-amber-800', 'ring-2', 'ring-amber-400'); // 1位: 金
+                } else if (index === 1) {
+                    badge.classList.add('bg-slate-200', 'text-slate-800', 'ring-2', 'ring-slate-400'); // 2位: 銀
+                } else if (index === 2) {
+                    badge.classList.add('bg-orange-100', 'text-orange-800', 'ring-2', 'ring-orange-400'); // 3位: 銅
+                } else {
+                    badge.classList.add('bg-slate-100', 'text-slate-600'); // 4位以降
+                }
+            });
+        }
+
+        // SortableJS のセットアップ
+        function initSortable() {
+            const el = document.getElementById('songList');
+            sortableInstance = Sortable.create(el, {
+                animation: 200, // 入れ替え時のアニメーション（ミリ秒）
+                ghostClass: 'sortable-ghost', // ドラッグ中のプレースホルダーのクラス
+                chosenClass: 'sortable-chosen', // クリック（ホールド）した瞬間のクラス
+                delay: 0, // タッチデバイスでのドラッグ開始までの遅延
+                touchStartThreshold: 5, // ドラッグと判定するまでの移動量
+                onEnd: function () {
+                    // 並び替え完了時に配列を再構成して結果を更新
+                    saveCurrentOrder();
+                    updateRankNumbers();
+                    updateResult();
+                }
+            });
+        }
+
+        // ドラッグ終了時にDOMの並び順から配列を再構築
+        function saveCurrentOrder() {
+            const items = document.querySelectorAll('#songList > div');
+            const orderedNames = Array.from(items).map(item => item.getAttribute('data-name'));
+            
+            // 現在の順番に基づいてcurrentSongsをマッピング
+            currentSongs = orderedNames.map(name => {
+                return songDatabase.find(song => song.name === name);
+            });
+        }
+
+        // 画面上の順位の数字のみを高速更新
+        function updateRankNumbers() {
+            const badges = document.querySelectorAll('.rank-badge');
+            badges.forEach((badge, index) => {
+                badge.innerText = index + 1;
+            });
+            updateRankStyles();
+        }
+
+        // テキストエリアへの出力同期
+        function updateResult() {
+            const csvTextarea = document.getElementById('csvResult');
+            // 曲名だけのカンマ区切り文字列を生成
+            const resultString = currentSongs.map(song => song.name).join(', ');
+            csvTextarea.value = resultString;
+        }
+
+        // コピー処理
+        function copyToClipboard() {
+            const csvTextarea = document.getElementById('csvResult');
+            
+            // 従来のセレクト・コピー方式（環境を問わず動作しやすい）
+            csvTextarea.select();
+            csvTextarea.setSelectionRange(0, 99999); // モバイル対応
+
+            let success = false;
+            try {
+                success = document.execCommand('copy');
+            } catch (err) {
+                console.error('Copy fallback failed', err);
+            }
+
+            if (success) {
+                showToast();
+            }
+        }
+
+        // コピー完了メッセージの表示
+        function showToast() {
+            const toast = document.getElementById('toast');
+            const copyBtn = document.getElementById('copyBtn');
+            const copyIcon = document.getElementById('copyIcon');
+            const copyBtnText = document.getElementById('copyBtnText');
+
+            // トーストメッセージを表示
+            toast.classList.remove('hidden');
+
+            // ボタン側の演出
+            copyBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            copyBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+            copyIcon.className = 'fa-solid fa-check';
+            copyBtnText.innerText = 'コピー完了！';
+
+            // 3秒後に元に戻す
+            setTimeout(() => {
+                toast.classList.add('hidden');
+                copyBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+                copyBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                copyIcon.className = 'fa-solid fa-copy';
+                copyBtnText.innerText = '結果をコピーする';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
