@@ -115,14 +115,15 @@
                         <i class="fa-solid fa-circle-info"></i> ヘルプ & トラブル防止
                     </p>
                     <ul class="list-disc list-inside space-y-1 pl-0.5">
-                        <li>各曲の左側の三本線アイコンをドラッグすると位置を入れ替えられます。</li>
+                        <li>曲の左側の三本線アイコンをつまんで、上下左右にドラッグして並べ替えができます。</li>
+                        <li>順位は「<b>左列の上から下へ</b>」進み、下端に達すると「<b>右隣の列の1番上</b>」へと続いていきます。</li>
                         <li>再生ボタン <i class="fa-solid fa-play text-red-500 text-[9px]"></i> でその場再生します。</li>
                         <li>ファイルを直接ダブルクリックして（<code>file://</code>）開いている場合、YouTubeの制限で再生できません。GitHubにアップロードしてご覧ください。</li>
                     </ul>
                 </div>
             </div>
 
-            <!-- 並び替えリスト (PC時は広く確保、多段折り返しグリッド) -->
+            <!-- 並び替えリスト (PC・タブレット時は縦方向のマルチカラム折り返しレイアウト) -->
             <div class="lg:col-span-8 xl:col-span-9">
                 <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
                     <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
@@ -130,11 +131,14 @@
                             <i class="fa-solid fa-list-ol text-blue-500"></i>
                             曲リスト (<span id="songCount">0</span>曲)
                         </h2>
-                        <span class="text-[11px] text-slate-400">上下左右にドラッグして並べ替え</span>
+                        <span class="text-[11px] text-slate-400">上から下へ、次に右隣の列へ並び替え</span>
                     </div>
 
-                    <!-- SortableJS の適用先コンテナ (レスポンシブな多段グリッド) -->
-                    <div id="songList" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 select-none">
+                    <!-- 
+                        CSS Columnsを用いた、縦並び・横折り返しマルチカラムコンテナ 
+                        PC時は高さ615pxで3段、タブレット時は高さ880pxで2段、スマホ時は高さ自動で1段になります。
+                    -->
+                    <div id="songList" class="columns-1 sm:columns-2 xl:columns-3 gap-2 select-none h-auto sm:h-[880px] xl:h-[615px] [column-fill:_auto]">
                         <!-- JavaScriptで曲がここに動的に生成されます -->
                     </div>
                 </div>
@@ -252,7 +256,8 @@
 
             currentSongs.forEach((song, index) => {
                 const item = document.createElement('div');
-                item.className = 'group bg-white hover:bg-slate-50 border border-slate-200 hover:border-blue-200 rounded-lg p-2 flex items-center justify-between gap-2 transition-colors duration-150 cursor-grab active:cursor-grabbing shadow-sm min-w-0';
+                // マルチカラムで要素が途中で切れないように `break-inside-avoid w-full mb-2` を追加
+                item.className = 'group bg-white hover:bg-slate-50 border border-slate-200 hover:border-blue-200 rounded-lg p-2 flex items-center justify-between gap-2 transition-colors duration-150 cursor-grab active:cursor-grabbing shadow-sm min-w-0 break-inside-avoid w-full mb-2';
                 item.setAttribute('data-name', song.name);
 
                 // 各行の中身
