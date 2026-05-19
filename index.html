@@ -22,41 +22,41 @@
         }
     </style>
 </head>
-<body class="bg-gradient-to-tr from-slate-50 to-blue-50 min-h-screen text-slate-800 font-sans antialiased pb-12">
+<body class="bg-gradient-to-tr from-slate-50 to-blue-50 min-h-screen text-slate-800 font-sans antialiased pb-6">
 
-    <div class="max-w-6xl mx-auto px-4 py-8">
+    <div class="max-w-[1600px] mx-auto px-4 py-6">
         <!-- ヘッダー -->
-        <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight flex items-center justify-center gap-3">
+        <header class="text-center mb-6">
+            <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center justify-center gap-2">
                 <i class="fa-solid fa-music text-blue-600"></i>
                 お気に入り曲 並び替えツール
             </h1>
-            <p class="text-slate-500 mt-2 text-sm md:text-base">
-                曲をドラッグ＆ドロップして好きな順に並び替えましょう。各曲の再生ボタンを押すと、その場で動画を再生できます。
+            <p class="text-slate-500 mt-1 text-xs md:text-sm">
+                ドラッグ＆ドロップして好きな順に並べ替えましょう。各曲の再生ボタンを押すと、その場で動画を再生できます。
             </p>
         </header>
 
-        <!-- メイングリッド: 左側（操作・出力・プレイヤー）、右側（並び替えリスト） -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <!-- メイングリッド: 左側（操作・出力・プレイヤー）、右側（並び替えリスト - 横幅を広く確保） -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             
-            <!-- 操作・出力・プレイヤーパネル (PC時は追従スクロール) -->
-            <div class="lg:col-span-5 space-y-6 lg:sticky lg:top-6 h-fit">
+            <!-- 操作・出力・プレイヤーパネル (PC時は左側に固定・追従) -->
+            <div class="lg:col-span-4 xl:col-span-3 space-y-4 lg:sticky lg:top-4 h-fit">
                 
                 <!-- YouTube 埋め込みプレイヤー -->
-                <div id="playerContainer" class="bg-white rounded-2xl shadow-md border border-slate-100 p-6">
-                    <h2 class="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
+                <div id="playerContainer" class="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
+                    <h2 class="text-base font-bold text-slate-800 mb-2 flex items-center gap-1.5">
                         <i class="fa-brands fa-youtube text-red-600"></i>
                         YouTube プレイヤー
                     </h2>
                     
                     <!-- 16:9比率のアスペクト比固定ビデオコンテナ -->
-                    <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-slate-950 flex items-center justify-center border border-slate-200">
+                    <div class="relative w-full aspect-video rounded-lg overflow-hidden bg-slate-950 flex items-center justify-center border border-slate-200">
                         <!-- 初期状態プレースホルダー -->
-                        <div id="playerPlaceholder" class="text-center p-4">
-                            <i class="fa-brands fa-youtube text-5xl text-slate-600 mb-2 animate-pulse"></i>
-                            <p class="text-xs text-slate-400">曲の再生ボタン <i class="fa-solid fa-play"></i> をクリックすると<br>ここに動画が読み込まれます</p>
+                        <div id="playerPlaceholder" class="text-center p-2">
+                            <i class="fa-brands fa-youtube text-4xl text-slate-600 mb-1 animate-pulse"></i>
+                            <p class="text-[10px] text-slate-400">曲の再生ボタン <i class="fa-solid fa-play"></i> を押すと<br>ここに動画が読み込まれます</p>
                         </div>
-                        <!-- 実際の動画プレーヤー (エラー回避のためにreferrerpolicyやallow設定を強化) -->
+                        <!-- 実際の動画プレーヤー -->
                         <iframe id="youtubeIframe" 
                                 class="absolute top-0 left-0 w-full h-full hidden" 
                                 frameborder="0" 
@@ -66,79 +66,75 @@
                     </div>
                     
                     <!-- 現在再生中の曲名表示 ＆ 直リンクへの代替アクセス -->
-                    <div id="playingTitle" class="mt-3 text-sm font-semibold text-slate-700 bg-slate-50 rounded-lg py-2.5 px-3 flex flex-col gap-2 hidden border border-slate-100">
-                        <div class="flex items-center justify-center gap-2">
-                            <span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+                    <div id="playingTitle" class="mt-2 text-xs font-semibold text-slate-700 bg-slate-50 rounded-lg py-2 px-2.5 flex flex-col gap-1.5 hidden border border-slate-100">
+                        <div class="flex items-center justify-center gap-1.5">
+                            <span class="inline-block w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
                             <span class="truncate">再生中: <strong id="currentPlayingName" class="text-slate-900">なし</strong></span>
                         </div>
-                        <!-- 埋め込み再生エラー（153など）が発生した時のための、YouTube直リンク -->
-                        <div class="border-t border-slate-200/60 pt-2 mt-1 text-center">
+                        <!-- 埋め込み再生エラーが発生した時のための、YouTube直リンク -->
+                        <div class="border-t border-slate-200/60 pt-1.5 text-center">
                             <a id="directYoutubeLink" href="#" target="_blank" rel="noopener noreferrer" 
-                               class="inline-flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 hover:underline transition">
+                               class="inline-flex items-center gap-1 text-[10px] text-red-600 hover:text-red-700 hover:underline transition">
                                 <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                                動画が再生できない場合はYouTubeで直接開く
+                                再生できない場合はYouTubeで開く
                             </a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 出力エリア -->
-                <div class="bg-white rounded-2xl shadow-md border border-slate-100 p-6">
-                    <h2 class="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
+                    <h2 class="text-base font-bold text-slate-800 mb-2 flex items-center gap-1.5">
                         <i class="fa-solid fa-square-poll-horizontal text-emerald-500"></i>
                         並び替え結果 (CSV)
                     </h2>
-                    <p class="text-xs text-slate-400 mb-3">
-                        上から順番に並んだカンマ区切りのテキストです。自動で更新されます。
-                    </p>
                     
                     <textarea id="csvResult" readonly 
-                        class="w-full h-32 p-3 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-slate-700 resize-none"
+                        class="w-full h-24 p-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-slate-700 resize-none"
                         placeholder="並び替えるとここに結果が出力されます..."></textarea>
                     
-                    <div class="mt-4">
+                    <div class="mt-2">
                         <!-- コピーボタン -->
                         <button id="copyBtn" onclick="copyToClipboard()"
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-xl transition duration-200 flex items-center justify-center gap-2 shadow-sm active:scale-95">
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium py-2 px-3 rounded-lg transition duration-200 flex items-center justify-center gap-1.5 shadow-sm active:scale-95">
                             <i id="copyIcon" class="fa-solid fa-copy"></i>
                             <span id="copyBtnText">結果をコピーする</span>
                         </button>
                     </div>
 
                     <!-- アラート表示用メッセージ -->
-                    <div id="toast" class="hidden mt-3 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-lg flex items-center gap-2">
+                    <div id="toast" class="hidden mt-2 p-2 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] rounded-lg flex items-center gap-1.5">
                         <i class="fa-solid fa-circle-check text-emerald-500"></i>
-                        クリップボードに結果をコピーしました！
+                        コピーしました！
                     </div>
                 </div>
 
                 <!-- ヘルプ -->
-                <div class="bg-blue-50/50 rounded-2xl border border-blue-100 p-5 text-xs text-slate-600 space-y-2">
+                <div class="bg-blue-50/50 rounded-xl border border-blue-100 p-4 text-[11px] text-slate-600 space-y-1.5">
                     <p class="font-bold text-blue-800 flex items-center gap-1">
-                        <i class="fa-solid fa-circle-info"></i> 操作のヒント & トラブルシューティング
+                        <i class="fa-solid fa-circle-info"></i> ヘルプ & トラブル防止
                     </p>
-                    <ul class="list-disc list-inside space-y-1.5 pl-1">
-                        <li>曲の行や左側の三本線アイコンをつまんで、上下に自由に入れ替えることができます。</li>
-                        <li>右側の再生ボタン <i class="fa-solid fa-play text-red-500 text-[10px]"></i> をクリックすると、左側のプレイヤーで動画をその場で再生します。</li>
-                        <li><strong>重要:</strong> ファイルを直接ダブルクリックして（<code>file://</code>）開いている場合、YouTubeの制限により動画は再生できません。GitHubにアップロードしてご覧ください。</li>
-                        <li>一部の動画は他サイトでの埋め込み再生を制限されています。その場合は「YouTubeで直接開く」リンクよりYouTubeサイトでお楽しみください。</li>
+                    <ul class="list-disc list-inside space-y-1 pl-0.5">
+                        <li>各曲の左側の三本線アイコンをドラッグすると位置を入れ替えられます。</li>
+                        <li>再生ボタン <i class="fa-solid fa-play text-red-500 text-[9px]"></i> でその場再生します。</li>
+                        <li>ファイルを直接ダブルクリックして（<code>file://</code>）開いている場合、YouTubeの制限で再生できません。GitHubにアップロードしてご覧ください。</li>
                     </ul>
                 </div>
             </div>
 
-            <!-- 並び替えリスト -->
-            <div class="lg:col-span-7">
-                <div class="bg-white rounded-2xl shadow-md border border-slate-100 p-6">
-                    <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
-                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <!-- 並び替えリスト (PC時は広く確保、多段折り返しグリッド) -->
+            <div class="lg:col-span-8 xl:col-span-9">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
+                    <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
+                        <h2 class="text-base font-bold text-slate-800 flex items-center gap-1.5">
                             <i class="fa-solid fa-list-ol text-blue-500"></i>
                             曲リスト (<span id="songCount">0</span>曲)
                         </h2>
-                        <span class="text-xs text-slate-400">ドラッグして移動</span>
+                        <span class="text-[11px] text-slate-400">上下左右にドラッグして並べ替え</span>
                     </div>
 
-                    <!-- SortableJS の適用先コンテナ -->
-                    <div id="songList" class="space-y-2 select-none">
+                    <!-- SortableJS の適用先コンテナ (レスポンシブな多段グリッド) -->
+                    <div id="songList" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 select-none">
                         <!-- JavaScriptで曲がここに動的に生成されます -->
                     </div>
                 </div>
@@ -256,31 +252,31 @@
 
             currentSongs.forEach((song, index) => {
                 const item = document.createElement('div');
-                item.className = 'group bg-white hover:bg-slate-50 border border-slate-200 hover:border-blue-200 rounded-xl p-3 flex items-center justify-between gap-3 transition-colors duration-150 cursor-grab active:cursor-grabbing shadow-sm';
+                item.className = 'group bg-white hover:bg-slate-50 border border-slate-200 hover:border-blue-200 rounded-lg p-2 flex items-center justify-between gap-2 transition-colors duration-150 cursor-grab active:cursor-grabbing shadow-sm min-w-0';
                 item.setAttribute('data-name', song.name);
 
                 // 各行の中身
                 item.innerHTML = `
-                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-1 min-w-0">
                         <!-- 順位インジケータ -->
-                        <div class="rank-badge w-7 h-7 flex items-center justify-center rounded-lg text-xs font-bold transition-all duration-300 flex-shrink-0">
+                        <div class="rank-badge w-6 h-6 flex items-center justify-center rounded-md text-[10px] font-bold transition-all duration-300 flex-shrink-0">
                             ${index + 1}
                         </div>
                         <!-- ハンドルアイコン -->
-                        <div class="text-slate-300 group-hover:text-slate-500 transition-colors pointer-events-none flex-shrink-0">
+                        <div class="text-slate-300 group-hover:text-slate-500 transition-colors pointer-events-none flex-shrink-0 text-xs">
                             <i class="fa-solid fa-bars"></i>
                         </div>
                         <!-- 曲名 -->
-                        <div class="font-medium text-slate-700 group-hover:text-slate-900 transition-colors truncate text-sm md:text-base pr-2">
+                        <div class="font-medium text-slate-700 group-hover:text-slate-900 transition-colors truncate text-xs pr-1">
                             ${song.name}
                         </div>
                     </div>
                     
                     <!-- YouTube再生ボタン -->
                     <button type="button" onclick="event.stopPropagation(); playVideo('${song.name}', '${song.url}')"
-                       class="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-red-50 hover:bg-red-100 border border-red-100 hover:border-red-200 rounded-full text-red-600 transition duration-200"
+                       class="flex-shrink-0 w-7 h-7 flex items-center justify-center bg-red-50 hover:bg-red-100 border border-red-100 hover:border-red-200 rounded-full text-red-600 transition duration-150"
                        title="${song.name} をその場で再生">
-                        <i class="fa-solid fa-play text-sm ml-0.5"></i>
+                        <i class="fa-solid fa-play text-[10px] ml-0.5"></i>
                     </button>
                 `;
                 listContainer.appendChild(item);
@@ -292,13 +288,13 @@
         function updateRankStyles() {
             const badges = document.querySelectorAll('.rank-badge');
             badges.forEach((badge, index) => {
-                badge.className = 'rank-badge w-7 h-7 flex items-center justify-center rounded-lg text-xs font-bold transition-all duration-300 flex-shrink-0';
+                badge.className = 'rank-badge w-6 h-6 flex items-center justify-center rounded-md text-[10px] font-bold transition-all duration-300 flex-shrink-0';
                 if (index === 0) {
-                    badge.classList.add('bg-amber-100', 'text-amber-800', 'ring-2', 'ring-amber-400'); // 1位: 金
+                    badge.classList.add('bg-amber-100', 'text-amber-800', 'ring-1', 'ring-amber-400'); // 1位: 金
                 } else if (index === 1) {
-                    badge.classList.add('bg-slate-200', 'text-slate-800', 'ring-2', 'ring-slate-400'); // 2位: 銀
+                    badge.classList.add('bg-slate-200', 'text-slate-800', 'ring-1', 'ring-slate-400'); // 2位: 銀
                 } else if (index === 2) {
-                    badge.classList.add('bg-orange-100', 'text-orange-800', 'ring-2', 'ring-orange-400'); // 3位: 銅
+                    badge.classList.add('bg-orange-100', 'text-orange-800', 'ring-1', 'ring-orange-400'); // 3位: 銅
                 } else {
                     badge.classList.add('bg-slate-100', 'text-slate-600'); // 4位以降
                 }
