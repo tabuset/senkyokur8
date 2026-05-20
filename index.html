@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>曲の並び替えツール (Music Sorter)</title>
-    <!-- Tailwind CSS for rich UI styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* ドラッグ中の要素のスタイル定義 */
@@ -25,7 +23,6 @@
 <body class="bg-gradient-to-tr from-slate-50 to-blue-50 min-h-screen text-slate-800 font-sans antialiased pb-6">
 
     <div class="max-w-[1600px] mx-auto px-4 py-6">
-        <!-- ヘッダー -->
         <header class="text-center mb-6">
             <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center justify-center gap-2">
                 <i class="fa-solid fa-music text-blue-600"></i>
@@ -36,27 +33,21 @@
             </p>
         </header>
 
-        <!-- メイングリッド: 左側（操作・出力・プレイヤー）、右側（並び替えリスト - 横幅を広く確保） -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             
-            <!-- 操作・出力・プレイヤーパネル (PC時は左側に固定・追従) -->
             <div class="lg:col-span-4 xl:col-span-3 space-y-4 lg:sticky lg:top-4 h-fit">
                 
-                <!-- YouTube 埋め込みプレイヤー -->
                 <div id="playerContainer" class="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
                     <h2 class="text-base font-bold text-slate-800 mb-2 flex items-center gap-1.5">
                         <i class="fa-brands fa-youtube text-red-600"></i>
                         YouTube プレイヤー
                     </h2>
                     
-                    <!-- 16:9比率のアスペクト比固定ビデオコンテナ -->
                     <div class="relative w-full aspect-video rounded-lg overflow-hidden bg-slate-950 flex items-center justify-center border border-slate-200">
-                        <!-- 初期状態プレースホルダー -->
                         <div id="playerPlaceholder" class="text-center p-2">
                             <i class="fa-brands fa-youtube text-4xl text-slate-600 mb-1 animate-pulse"></i>
                             <p class="text-[10px] text-slate-400">曲の再生ボタン <i class="fa-solid fa-play"></i> を押すと<br>ここに動画が読み込まれます</p>
                         </div>
-                        <!-- 実際の動画プレーヤー -->
                         <iframe id="youtubeIframe" 
                                 class="absolute top-0 left-0 w-full h-full hidden" 
                                 frameborder="0" 
@@ -65,13 +56,11 @@
                                 allowfullscreen></iframe>
                     </div>
                     
-                    <!-- 現在再生中の曲名表示 ＆ 直リンクへの代替アクセス -->
                     <div id="playingTitle" class="mt-2 text-xs font-semibold text-slate-700 bg-slate-50 rounded-lg py-2 px-2.5 flex flex-col gap-1.5 hidden border border-slate-100">
                         <div class="flex items-center justify-center gap-1.5">
                             <span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
                             <span class="truncate">再生中: <strong id="currentPlayingName" class="text-slate-900">なし</strong></span>
                         </div>
-                        <!-- 埋め込み再生エラーが発生した時のための、YouTube直リンク -->
                         <div class="border-t border-slate-200/60 pt-1.5 text-center">
                             <a id="directYoutubeLink" href="#" target="_blank" rel="noopener noreferrer" 
                                class="inline-flex items-center gap-1 text-[10px] text-red-600 hover:text-red-700 hover:underline transition">
@@ -82,7 +71,6 @@
                     </div>
                 </div>
 
-                <!-- 出力エリア -->
                 <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
                     <h2 class="text-base font-bold text-slate-800 mb-2 flex items-center gap-1.5">
                         <i class="fa-solid fa-square-poll-horizontal text-emerald-500"></i>
@@ -94,7 +82,6 @@
                         placeholder="並び替えるとここに結果が出力されます..."></textarea>
                     
                     <div class="mt-2">
-                        <!-- コピーボタン -->
                         <button id="copyBtn" onclick="copyToClipboard()"
                             class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium py-2 px-3 rounded-lg transition duration-200 flex items-center justify-center gap-1.5 shadow-sm active:scale-95">
                             <i id="copyIcon" class="fa-solid fa-copy"></i>
@@ -102,14 +89,12 @@
                         </button>
                     </div>
 
-                    <!-- アラート表示用メッセージ -->
                     <div id="toast" class="hidden mt-2 p-2 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] rounded-lg flex items-center gap-1.5">
                         <i class="fa-solid fa-circle-check text-emerald-500"></i>
                         コピーしました！
                     </div>
                 </div>
 
-                <!-- ヘルプ -->
                 <div class="bg-blue-50/50 rounded-xl border border-blue-100 p-4 text-[11px] text-slate-600 space-y-1.5">
                     <p class="font-bold text-blue-800 flex items-center gap-1">
                         <i class="fa-solid fa-circle-info"></i> ヘルプ & トラブル防止
@@ -123,7 +108,6 @@
                 </div>
             </div>
 
-            <!-- 並び替えリスト (PC・タブレット時は縦方向のマルチカラム折り返しレイアウト) -->
             <div class="lg:col-span-8 xl:col-span-9">
                 <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
                     <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
@@ -131,23 +115,17 @@
                             <i class="fa-solid fa-list-ol text-blue-500"></i>
                             曲リスト (<span id="songCount">0</span>曲)
                         </h2>
-                        <span class="text-[11px] text-slate-400">上から下へ、次に右隣 of 列へ並び替え</span>
+                        <span class="text-[11px] text-slate-400">上から下へ、次に右隣の列へ並び替え</span>
                     </div>
 
-                    <!-- 
-                        CSS Columnsを用いた、縦並び・横折り返しマルチカラムコンテナ 
-                        PC時は高さ615pxで3段、タブレット時は高さ880pxで2段、スマホ時は高さ自動で1段になります。
-                    -->
                     <div id="songList" class="columns-1 sm:columns-2 xl:columns-3 gap-2 select-none h-auto sm:h-[880px] xl:h-[615px] [column-fill:_auto]">
-                        <!-- JavaScriptで曲がここに動的に生成されます -->
-                    </div>
+                        </div>
                 </div>
             </div>
 
         </div>
     </div>
 
-    <!-- CDN for SortableJS (ドラッグ＆ドロップ機能) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 
     <script>
@@ -184,8 +162,7 @@
             { name: "世界に一つだけの花", url: "https://www.youtube.com/watch?v=0xNpqk-fkz8&list=RD0xNpqk-fkz8&start_radio=1" },
             { name: "夜明け", url: "https://www.youtube.com/watch?v=4oMqrUqW_WM" },
             { name: "空より高く", url: "https://youtu.be/_0Vbre9OuCA" },
-            { name: "すみれの花のように", url: "https://youtu.be/aP4JgRCCe1E" },
-            { name: "キセキ", url: "https://www.youtube.com/watch?v=N-MlfBJLRUQ" }
+            { name: "すみれの花のように", url: "https://youtu.be/aP4JgRCCe1E" }
         ];
 
         // 現在のアクティブな並び順
@@ -262,21 +239,17 @@
                 // 各行の中身
                 item.innerHTML = `
                     <div class="flex items-center gap-2 flex-1 min-w-0">
-                        <!-- 順位インジケータ -->
                         <div class="rank-badge w-6 h-6 flex items-center justify-center rounded-md text-[10px] font-bold transition-all duration-300 flex-shrink-0">
                             ${index + 1}
                         </div>
-                        <!-- ハンドルアイコン -->
                         <div class="text-slate-300 group-hover:text-slate-500 transition-colors pointer-events-none flex-shrink-0 text-xs">
                             <i class="fa-solid fa-bars"></i>
                         </div>
-                        <!-- 曲名 -->
                         <div class="font-medium text-slate-700 group-hover:text-slate-900 transition-colors truncate text-xs pr-1">
                             ${song.name}
                         </div>
                     </div>
                     
-                    <!-- YouTube再生ボタン -->
                     <button type="button" onclick="event.stopPropagation(); playVideo('${song.name}', '${song.url}')"
                        class="flex-shrink-0 w-7 h-7 flex items-center justify-center bg-red-50 hover:bg-red-100 border border-red-100 hover:border-red-200 rounded-full text-red-600 transition duration-150"
                        title="${song.name} をその場で再生">
